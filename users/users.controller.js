@@ -4,21 +4,6 @@ const prisma = new PrismaClient();
 const jwt = require("jsonwebtoken");
 const secret = "secret";
 
-const users = [
-  {
-    id: 1,
-    username: "admin",
-    password: "admin",
-    role: "Admin",
-  },
-  {
-    id: 2,
-    username: "user",
-    password: "user",
-    role: "User",
-  },
-];
-
 const createUser = async (req, res) => {
   try {
     const createUser = await prisma.user.create({
