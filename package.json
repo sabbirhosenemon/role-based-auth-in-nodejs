@@ -8,6 +8,7 @@
     "watch": "nodemon server.js"
   },
   "dependencies": {
+    "@prisma/client": "^4.2.0",
     "body-parser": "^1.18.3",
     "cors": "^2.8.5",
     "express": "^4.16.4",
@@ -15,6 +16,7 @@
     "jsonwebtoken": "^8.4.0"
   },
   "devDependencies": {
-    "nodemon": "^2.0.4"
+    "nodemon": "^2.0.4",
+    "prisma": "^4.2.0"
   }
 }

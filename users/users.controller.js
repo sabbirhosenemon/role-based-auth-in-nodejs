@@ -1,4 +1,7 @@
-﻿const jwt = require("jsonwebtoken");
+﻿const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
+
+const jwt = require("jsonwebtoken");
 const secret = "secret";
 
 const users = [
@@ -16,14 +19,29 @@ const users = [
   },
 ];
 
-function authenticate(req, res, next) {
+const createUser = async (req, res) => {
   try {
-    const user = users.find(
-      (u) =>
-        u.username === req.body.username && u.password === req.body.password
-    );
+    const createUser = await prisma.user.create({
+      data: {
+        username: req.body.username,
+        password: req.body.password,
+        role: req.body.role,
+      },
+    });
+    res.json(createUser);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const authenticate = async (req, res) => {
+  try {
+    const allUser = await prisma.user.findMany();
+    const user = allUser.find((u) => u.username === req.body.username);
     if (user) {
-      const token = jwt.sign({ sub: user.id, role: user.role }, secret);
+      const token = jwt.sign({ sub: user.id, role: user.role }, secret, {
+        expiresIn: "1h",
+      });
       const { password, ...userWithoutPassword } = user;
       return res.json({
         ...userWithoutPassword,
@@ -34,40 +52,42 @@ function authenticate(req, res, next) {
       .status(400)
       .json({ message: "Username or password is incorrect" });
   } catch (err) {
-    next(err);
+    res.status(500).json({ message: err.message });
   }
-}
+};
 
-function getAll(req, res, next) {
+const getAll = async (req, res) => {
+  console.log(req.user);
   try {
-    return res.json(
-      users.map((u) => {
-        const { password, ...userWithoutPassword } = u;
-        return userWithoutPassword;
-      })
-    );
+    const allUser = await prisma.user.findMany();
+    res.json(allUser.sort((a, b) => a.id - b.id));
   } catch (error) {
-    next(error);
+    res.status(500).json({ message: error.message });
   }
-}
+};
 
-function getById(req, res, next) {
-  const currentUser = req.user;
+const getById = async (req, res) => {
+  const singleUser = await prisma.user.findUnique({
+    where: {
+      id: Number(req.params.id),
+    },
+  });
+  const currentUser = singleUser;
   const id = parseInt(req.params.id);
 
   // only allow admins to access other user records
-  if (id !== currentUser.sub && currentUser.role !== "Admin") {
+  if (id !== currentUser.sub && currentUser.role !== "admin") {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
-  const user = users.find((u) => u.id === parseInt(id));
-  if (!user) return;
-  const { password, ...userWithoutPassword } = user;
+  if (!singleUser) return;
+  const { password, ...userWithoutPassword } = singleUser;
   res.json(userWithoutPassword);
-}
+};
 
 module.exports = {
   authenticate,
+  createUser,
   getAll,
   getById,
 };
